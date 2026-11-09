@@ -90,7 +90,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 .stat.hl span{color:rgba(255,255,255,.82)}
 .stat:nth-child(3) b{color:var(--orange)}
 .stat:nth-child(4) b{color:var(--green)}
-@media (max-width:520px){.stats{grid-template-columns:repeat(2,1fr)}.stat.hl{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center}.stat.hl b{font-size:38px}}
+@media (max-width:520px){.stats{grid-template-columns:repeat(3,1fr);gap:8px}.stat{min-height:0;padding:12px}.stat b{font-size:26px}.stat.hl{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center}.stat.hl b{font-size:38px}}
 
 /* translucent sticky bar with segmented control */
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:10px max(16px,env(safe-area-inset-left,0px));background:var(--bar);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);
