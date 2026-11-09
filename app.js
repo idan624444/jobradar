@@ -29,7 +29,12 @@ function cleanJob(id,d){d=d||{};const sc=Math.round(Number(d.score));return{id,t
   requirements:(Array.isArray(d.requirements)?d.requirements:[]).slice(0,10).map(r=>({t:str(r&&r.t,120),must:!!(r&&r.must===true),s:["met","partial","unmet","unknown"].includes(r&&r.s)?r.s:"unknown"})).filter(r=>r.t)}}
 const blocked=j=>j.requirements.some(r=>r.must&&r.s==="unmet");
 function cleanStatus(d){d=d||{};return{state:typeof d.state==="string"?d.state:"",note:str(d.note,2000),updatedAt:str(d.updatedAt,40)}}
-function isNew(j){return meta?.lastRunId? j.runId===meta.lastRunId : false}
+// "New" means found since her previous visit (a visit = opening the app after 30+ minutes away).
+const VISIT=(()=>{let v={};try{v=JSON.parse(localStorage.getItem("jr-visit")||"{}")}catch(_){}
+  const now=Date.now();if(!v.current||now-v.current>18e5){v={prev:v.current||0,current:now};try{localStorage.setItem("jr-visit",JSON.stringify(v))}catch(_){}}
+  return v})();
+function foundTime(j){const t=Date.parse(j.foundTs||"");return Number.isFinite(t)?t:Date.parse((j.foundAt||j.runId||"1970-01-01")+"T00:00:00")}
+function isNew(j){return VISIT.prev?foundTime(j)>VISIT.prev:(meta?.lastRunId?j.runId===meta.lastRunId:false)}
 
 function renderTabs(){
   const counts={today:jobs.filter(j=>isNew(j)&&st(j.id)!=="hidden").length,all:jobs.filter(j=>st(j.id)!=="hidden").length,
@@ -142,7 +147,11 @@ function render(){
   renderTabs();renderFilters();
   if(ui.tab==="tips"){$("view").innerHTML=tipsView();return}
   const list=filtered();
-  $("view").innerHTML=list.length?list.map(card).join(""):emptyView();
+  if(!list.length){$("view").innerHTML=emptyView();return}
+  // Jobs that miss a mandatory requirement go into a folded group at the bottom.
+  const fold=ui.tab==="today"||ui.tab==="all";
+  const fit=fold?list.filter(j=>!blocked(j)):list,rest=fold?list.filter(blocked):[];
+  $("view").innerHTML=fit.map(card).join("")+(rest.length?`<details class="more" id="more"${ui.moreOpen?" open":""}><summary>${rest.length===1?"משרה אחת":rest.length+" משרות"} שחסרה בהן דרישת חובה</summary><div class="list">${rest.map(card).join("")}</div></details>`:"");
 }
 function renderRun(){
   if(!meta){return}
@@ -265,6 +274,12 @@ status=loadStatus();
     meta=data&&typeof data.meta==="object"?data.meta:null;
     jobs=(Array.isArray(data?.jobs)?data.jobs:[]).slice(0,1000).filter(j=>j&&typeof j.id==="string"&&/^[A-Za-z0-9_-]{1,120}$/.test(j.id)).map(j=>cleanJob(j.id,j));
   }catch(_){showBanner("לא הצלחתי לטעון את המשרות. בדקי את החיבור ורענני את הדף.")}
-  loaded=true;renderRun();render();
+  loaded=true;renderRun();render();hideSplash();
 })();
+function hideSplash(){
+  const el=$("splash");if(!el)return;
+  const wait=Math.max(0,1100-performance.now());
+  setTimeout(()=>{el.classList.add("out");document.documentElement.classList.remove("booting");setTimeout(()=>el.remove(),600)},wait);
+}
+document.addEventListener("toggle",e=>{if(e.target.id==="more")ui.moreOpen=e.target.open},true);
 if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
