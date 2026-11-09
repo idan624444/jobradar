@@ -7,7 +7,7 @@ const TABS=[
 ];
 const CATS=["סושיאל","שיווק דיגיטלי","משרד פרסום","תוכן ווידאו","קמפיינים PPC","שיווק כללי"];
 const STATES={saved:"שמורה",applied:"הגשתי",interview:"ראיון",offer:"הצעה!",rejected:"לא התקבלתי",hidden:"לא מתאים"};
-const ui={tab:"today",cats:new Set(),q:"",partOnly:false,remoteOnly:false};
+const ui={tab:"today",cats:new Set(),q:"",partOnly:false,remoteOnly:false,fitOnly:false};
 try{const t=localStorage.getItem("jc-tab");if(t&&TABS.some(x=>x.id===t))ui.tab=t}catch(e){}
 if(location.hash&&TABS.some(x=>x.id===location.hash.slice(1)))ui.tab=location.hash.slice(1);
 
@@ -25,7 +25,9 @@ const str=(v,n=200)=>typeof v==="string"?v.slice(0,n):"";
 const strs=(a,n=4)=>Array.isArray(a)?a.filter(x=>typeof x==="string").slice(0,n).map(x=>x.slice(0,200)):[];
 function cleanJob(id,d){d=d||{};const sc=Math.round(Number(d.score));return{id,title:str(d.title,160)||"משרה ללא כותרת",company:str(d.company,80),city:str(d.city,80),scope:str(d.scope,40),mode:str(d.mode,40),experience:str(d.experience,40),
   category:CATS.includes(d.category)?d.category:"שיווק כללי",source:str(d.source,30),url:safeUrl(d.url),postedAt:/^\d{4}-\d{2}-\d{2}$/.test(d.postedAt)?d.postedAt:"",runId:str(d.runId,20),
-  score:Number.isFinite(sc)?Math.min(100,Math.max(0,sc)):0,reasons:strs(d.reasons),flags:strs(d.flags,3),tip:str(d.tip,400),letter:str(d.letter,1500)}}
+  score:Number.isFinite(sc)?Math.min(100,Math.max(0,sc)):0,reasons:strs(d.reasons),flags:strs(d.flags,3),tip:str(d.tip,400),letter:str(d.letter,1500),
+  requirements:(Array.isArray(d.requirements)?d.requirements:[]).slice(0,10).map(r=>({t:str(r&&r.t,120),must:!!(r&&r.must===true),s:["met","partial","unmet","unknown"].includes(r&&r.s)?r.s:"unknown"})).filter(r=>r.t)}}
+const blocked=j=>j.requirements.some(r=>r.must&&r.s==="unmet");
 function cleanStatus(d){d=d||{};return{state:typeof d.state==="string"?d.state:"",note:str(d.note,2000),updatedAt:str(d.updatedAt,40)}}
 function isNew(j){return meta?.lastRunId? j.runId===meta.lastRunId : false}
 
@@ -40,7 +42,7 @@ function renderTabs(){
 function renderFilters(){
   if(ui.tab==="tips"){$("filters").innerHTML="";return}
   $("filters").innerHTML=CATS.map(c=>`<button class="chip" aria-pressed="${ui.cats.has(c)}" data-cat="${c}">${c}</button>`).join("")+
-   `<button class="chip" aria-pressed="${ui.partOnly}" data-f="partOnly">חלקית / גמישה</button><button class="chip" aria-pressed="${ui.remoteOnly}" data-f="remoteOnly">מהבית / היברידי</button>`+
+   `<button class="chip" aria-pressed="${ui.fitOnly}" data-f="fitOnly">רק מה שאני עומדת בחובה</button><button class="chip" aria-pressed="${ui.partOnly}" data-f="partOnly">חלקית / גמישה</button><button class="chip" aria-pressed="${ui.remoteOnly}" data-f="remoteOnly">מהבית / היברידי</button>`+
    `<input class="search" id="q" type="search" placeholder="חיפוש חברה, עיר, תפקיד" value="${esc(ui.q)}">`;
 }
 function filtered(){
@@ -50,6 +52,7 @@ function filtered(){
   else if(ui.tab==="saved")list=list.filter(j=>st(j.id)==="saved");
   else if(ui.tab==="journey")list=list.filter(j=>["applied","interview","offer","rejected"].includes(st(j.id)));
   if(ui.cats.size)list=list.filter(j=>ui.cats.has(j.category));
+  if(ui.fitOnly)list=list.filter(j=>!blocked(j));
   if(ui.partOnly)list=list.filter(j=>/חלקית|גמיש|פרילנס|פרויקט/.test(j.scope||""));
   if(ui.remoteOnly)list=list.filter(j=>/בית|היברידי|מרחוק/.test(j.mode||""));
   if(ui.q){const q=ui.q.trim();list=list.filter(j=>[j.title,j.company,j.city,j.category].join(" ").includes(q))}
@@ -75,6 +78,7 @@ function card(j){
       ${s&&s!=="hidden"?`<span class="state st-${s}">${esc(STATES[s])}</span>`:""}
     </div>
     <div class="body">
+      ${reqView(j)}
       <ul class="why">${(j.reasons||[]).map(r=>`<li>${esc(r)}</li>`).join("")}${(j.flags||[]).map(r=>`<li class="flag">${esc(r)}</li>`).join("")}</ul>
       ${j.tip?`<div class="tip"><b>איך לבלוט:</b> ${esc(j.tip)}</div>`:""}
       <div class="actions">
@@ -86,6 +90,14 @@ function card(j){
       ${s&&s!=="hidden"?`<textarea class="note" id="note-${esc(j.id)}" data-note="${esc(j.id)}" placeholder="הערות: עם מי דיברתי, מתי לחזור אליהם…" ${readOnly?"disabled":""}>${esc(status[j.id]?.note||"")}</textarea>`:""}
     </div>
   </article>`;
+}
+const REQ_LABEL={met:"יש לך",partial:"חלקית",unmet:"חסר",unknown:"לבדוק"};
+function reqView(j){
+  if(!j.requirements.length)return "";
+  const r=[...j.requirements].sort((a,b)=>(b.must-a.must));
+  const miss=r.filter(x=>x.must&&x.s==="unmet").length;
+  return `<details class="reqs"${miss?" open":""}><summary><span>דרישות המשרה מול מה שיש לך</span>${miss?`<span class="reqbad">${miss===1?"דרישת חובה אחת חסרה":miss+" דרישות חובה חסרות"}</span>`:`<span class="reqok">עומדת בכל דרישות החובה הידועות</span>`}</summary>
+    <ul>${r.map(x=>`<li class="rq-${x.s}"><i aria-hidden="true"></i><span>${esc(x.t)}${x.must?' <em>חובה</em>':' <em class="adv">יתרון</em>'}</span><b>${REQ_LABEL[x.s]}</b></li>`).join("")}</ul></details>`;
 }
 function tipsView(){const p=profile;return `<div class="tips">
   <section class="tipcard" id="me"><h3>הפרטים שלי להגשה</h3>

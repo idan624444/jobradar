@@ -201,6 +201,25 @@ dialog#apply::backdrop{background:rgba(0,0,0,.36)}
 .sheet .row .act.primary{flex-basis:100%}
 .toast{position:fixed;inset:auto 16px calc(24px + env(safe-area-inset-bottom,0px));margin:0 auto;max-width:420px;background:var(--label);color:var(--bg);border-radius:14px;padding:12px 16px;font-size:15px;font-weight:600;text-align:center;z-index:30;box-shadow:0 8px 30px rgba(0,0,0,.25)}
 @media (prefers-reduced-motion:no-preference){dialog#apply[open]{animation:sheetIn .45s var(--spring)}@keyframes sheetIn{from{transform:translateY(40px);opacity:.001}to{transform:none;opacity:1}}.toast:not([hidden]){animation:sheetIn .35s var(--spring)}}
+/* requirements check */
+.reqs{background:var(--fill-2);border-radius:14px;padding:0 13px}
+.reqs summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0;font-size:14.5px;font-weight:600}
+.reqs summary::-webkit-details-marker{display:none}
+.reqs summary::after{content:"›";color:var(--label-3);font-size:20px;line-height:1;transform:rotate(90deg);transition:transform .2s var(--spring)}
+.reqs[open] summary::after{transform:rotate(-90deg)}
+.reqbad{font-size:12.5px;font-weight:700;color:var(--red);background:var(--red-soft);border-radius:999px;padding:2px 9px;margin-inline-start:auto}
+.reqok{font-size:12.5px;font-weight:700;color:var(--green);background:var(--green-soft);border-radius:999px;padding:2px 9px;margin-inline-start:auto}
+.reqs ul{list-style:none;margin:0;padding:0 0 10px;display:flex;flex-direction:column;gap:7px}
+.reqs li{display:flex;gap:9px;align-items:flex-start;font-size:14.5px;line-height:1.35}
+.reqs li span{flex:1;min-width:0}
+.reqs li em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--label-2);background:var(--fill);border-radius:5px;padding:0 5px;margin-inline-start:4px;white-space:nowrap}
+.reqs li em.adv{background:transparent;border:1px solid var(--sep)}
+.reqs li b{font-size:12.5px;white-space:nowrap}
+.reqs li i{flex:0 0 10px;height:10px;border-radius:50%;margin-top:5px}
+.rq-met i{background:var(--green-ring)}.rq-met b{color:var(--green)}
+.rq-partial i{background:var(--orange-ring)}.rq-partial b{color:var(--orange)}
+.rq-unmet i{background:var(--red-ring)}.rq-unmet b{color:var(--red)}
+.rq-unknown i{background:var(--label-3)}.rq-unknown b{color:var(--label-2)}
 /* CV */
 .cvrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;padding:12px;border-radius:16px;background:var(--fill-2)}
 .cvrow.small{margin-top:0}
@@ -264,6 +283,6 @@ label.act{cursor:pointer;display:inline-block}
 </dialog>
 <div class="toast" id="toast" role="status" hidden></div>
 <input type="file" id="cv-file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
