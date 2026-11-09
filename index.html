@@ -201,6 +201,17 @@ dialog#apply::backdrop{background:rgba(0,0,0,.36)}
 .sheet .row .act.primary{flex-basis:100%}
 .toast{position:fixed;inset:auto 16px calc(24px + env(safe-area-inset-bottom,0px));margin:0 auto;max-width:420px;background:var(--label);color:var(--bg);border-radius:14px;padding:12px 16px;font-size:15px;font-weight:600;text-align:center;z-index:30;box-shadow:0 8px 30px rgba(0,0,0,.25)}
 @media (prefers-reduced-motion:no-preference){dialog#apply[open]{animation:sheetIn .45s var(--spring)}@keyframes sheetIn{from{transform:translateY(40px);opacity:.001}to{transform:none;opacity:1}}.toast:not([hidden]){animation:sheetIn .35s var(--spring)}}
+/* CV */
+.cvrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;padding:12px;border-radius:16px;background:var(--fill-2)}
+.cvrow.small{margin-top:0}
+.cvrow.empty-cv{justify-content:space-between}
+.cvrow.empty-cv div{display:flex;flex-direction:column}
+.cvrow span{font-size:13.5px;color:var(--label-2)}
+.cvicon{flex:0 0 42px;height:50px;border-radius:8px;background:var(--red);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:end center;padding-bottom:7px;box-sizing:border-box;letter-spacing:.04em;clip-path:polygon(0 0,72% 0,100% 22%,100% 100%,0 100%)}
+.cvmeta{flex:1 1 140px;min-width:0;display:flex;flex-direction:column}
+.cvmeta b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cvbtns{display:flex;gap:6px;flex-wrap:wrap}
+label.act{cursor:pointer;display:inline-block}
 /* profile form */
 .fine{font-size:14px;color:var(--label-2);margin:0 0 10px}
 .form{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center}
@@ -239,10 +250,11 @@ dialog#apply::backdrop{background:rgba(0,0,0,.36)}
     <div class="grab" aria-hidden="true"></div>
     <h2 id="ap-title"></h2>
     <div class="sub2" id="ap-co"></div>
-    <ol class="steps"><li><b>1</b>בדקי את המכתב ותקני אם צריך</li><li><b>2</b>״העתקה ופתיחת המודעה״, ושם הדביקי אותו</li><li><b>3</b>צרפי את קובץ קורות החיים ושלחי</li></ol>
+    <ol class="steps"><li><b>1</b>בדקי את המכתב ותקני אם צריך</li><li><b>2</b>״העתקה ופתיחת המודעה״, ושם הדביקי אותו</li><li><b>3</b>צרפי את קורות החיים ושלחי</li></ol>
     <div class="hint" id="ap-nopf" hidden><span>עוד לא הוספת קישור לתיק עבודות</span><button id="ap-editpf" type="button">להוספה</button></div>
     <label for="ap-letter" class="eyebrow">מכתב הפנייה</label>
     <textarea id="ap-letter" spellcheck="true"></textarea>
+    <div id="ap-cv"></div>
     <div class="row">
       <a class="act primary" id="ap-go" href="#" target="_blank" rel="noopener noreferrer">העתקה ופתיחת המודעה</a>
       <button class="act" id="ap-copy" type="button">העתקה בלבד</button>
@@ -251,6 +263,7 @@ dialog#apply::backdrop{background:rgba(0,0,0,.36)}
   </div>
 </dialog>
 <div class="toast" id="toast" role="status" hidden></div>
-<script src="app.js?v=3"></script>
+<input type="file" id="cv-file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+<script src="app.js?v=4"></script>
 </body>
 </html>

@@ -89,13 +89,14 @@ function card(j){
 }
 function tipsView(){const p=profile;return `<div class="tips">
   <section class="tipcard" id="me"><h3>הפרטים שלי להגשה</h3>
-    <p class="fine">הפרטים נוספים אוטומטית בסוף כל מכתב פנייה. הם נשמרים רק בטלפון שלך ולא עולים לאינטרנט.</p>
+    <p class="fine">הפרטים נוספים אוטומטית בסוף כל מכתב פנייה, וקורות החיים מוכנים לצירוף בכל הגשה. הכל נשמר רק בטלפון שלך ולא עולה לאינטרנט.</p>
     <div class="form">
       <label for="pf-name">שם מלא</label><input id="pf-name" data-pf="name" autocomplete="name" value="${esc(p.name)}" placeholder="תהילה">
       <label for="pf-phone">טלפון</label><input id="pf-phone" data-pf="phone" type="tel" autocomplete="tel" dir="ltr" value="${esc(p.phone)}" placeholder="050-0000000">
       <label for="pf-email">מייל</label><input id="pf-email" data-pf="email" type="email" autocomplete="email" dir="ltr" value="${esc(p.email)}" placeholder="name@gmail.com">
       <label for="pf-portfolio">קישור לתיק עבודות</label><input id="pf-portfolio" data-pf="portfolio" type="url" dir="ltr" value="${esc(p.portfolio)}" placeholder="https://instagram.com/…">
     </div>
+    ${cvRow()}
   </section>
   <section class="tipcard"><h3>התיק שלך הוא היתרון הגדול</h3>
     <p>אין לך עדיין ניסיון רשמי, אבל יש לך משהו שרוב המועמדים לג׳וניור לא מביאים: צילום ועריכה טובים ועמוד עסקי שניהלת בעצמך.</p>
@@ -168,7 +169,7 @@ function openApply(id){
   const j=jobs.find(x=>x.id===id);if(!j)return;applyJob=j;
   $("ap-title").textContent=j.title;$("ap-co").textContent=[j.company||"חברה חסויה",j.city].filter(Boolean).join(" · ");
   $("ap-letter").value=letterFor(j);$("ap-go").href=j.url;
-  $("ap-nopf").hidden=!!profile.portfolio;
+  $("ap-nopf").hidden=!!profile.portfolio;renderApplyCv();
   const d=$("apply");if(typeof d.showModal==="function"){d.showModal()}else{d.setAttribute("open","")}
 }
 function closeApply(){const d=$("apply");if(d.open){typeof d.close==="function"?d.close():d.removeAttribute("open")}}
@@ -189,6 +190,52 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#ap-editpf")){closeApply();ui.tab="tips";render();setTimeout(()=>$("pf-portfolio")?.focus(),50);return}
 });
 document.addEventListener("input",e=>{const k=e.target.dataset?.pf;if(k){profile[k]=e.target.value.slice(0,300);saveProfile()}});
+// CV file: kept in this browser's IndexedDB only. It is never uploaded; the public site has no copy.
+const CV_MAX=5*1024*1024;
+const CV_TYPES={pdf:"application/pdf",doc:"application/msword",docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"};
+let cv=null;
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open("jobradar-files",1);r.onupgradeneeded=()=>r.result.createObjectStore("files");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbDo(mode,fn){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction("files",mode);const q=fn(t.objectStore("files"));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})}
+async function loadCv(){try{const r=await idbDo("readonly",s=>s.get("cv"));cv=r&&r.blob instanceof Blob?r:null}catch(_){cv=null}}
+function cvName(n){return String(n||"").replace(/[^\p{L}\p{N} ._()-]/gu,"").replace(/\s+/g," ").trim().slice(0,80)||"קורות חיים"}
+function fmtSize(b){return b<1048576?Math.max(1,Math.round(b/1024))+" KB":(b/1048576).toFixed(1)+" MB"}
+async function addCv(file){
+  const ext=(file.name.split(".").pop()||"").toLowerCase();
+  if(!CV_TYPES[ext])return toast("אפשר להעלות רק PDF או Word");
+  if(file.size>CV_MAX)return toast("הקובץ גדול מ-5MB. נסי לשמור אותו מחדש כ-PDF");
+  // Check the real file signature, not just the name.
+  const h=new Uint8Array(await file.slice(0,4).arrayBuffer());
+  const ok=ext==="pdf"?h[0]===0x25&&h[1]===0x50&&h[2]===0x44&&h[3]===0x46:ext==="docx"?h[0]===0x50&&h[1]===0x4b:h[0]===0xd0&&h[1]===0xcf;
+  if(!ok)return toast("הקובץ לא נראה כמו "+ext.toUpperCase()+" תקין");
+  const name=cvName(file.name.replace(/\.[^.]+$/,""))+"."+ext;
+  const rec={name,type:CV_TYPES[ext],size:file.size,addedAt:new Date().toISOString(),blob:new Blob([file],{type:CV_TYPES[ext]})};
+  try{await idbDo("readwrite",s=>s.put(rec,"cv"));cv=rec;toast("קורות החיים נשמרו בטלפון");render()}
+  catch(_){toast("לא הצלחתי לשמור את הקובץ. אם את בגלישה פרטית, פתחי בחלון רגיל")}
+}
+async function removeCv(){try{await idbDo("readwrite",s=>s.delete("cv"))}catch(_){};cv=null;toast("קורות החיים נמחקו מהטלפון");render()}
+function saveCvFile(){if(!cv)return;const u=URL.createObjectURL(cv.blob);const a=document.createElement("a");a.href=u;a.download=cv.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000)}
+function cvFile(){return cv?new File([cv.blob],cv.name,{type:cv.type}):null}
+function canShareCv(){const f=cvFile();try{return !!(f&&navigator.canShare&&navigator.canShare({files:[f]}))}catch(_){return false}}
+function cvRow(){
+  if(!cv)return `<div class="cvrow empty-cv"><div><b>קורות חיים</b><span>עוד לא הועלו. PDF או Word, עד 5MB</span></div><label class="act primary" for="cv-file">העלאת קו״ח</label></div>`;
+  return `<div class="cvrow"><div class="cvicon" aria-hidden="true">${esc(cv.name.split(".").pop().toUpperCase())}</div><div class="cvmeta"><b>${esc(cv.name)}</b><span>${fmtSize(cv.size)} · נשמר בטלפון בלבד</span></div>
+    <div class="cvbtns"><button class="act" data-cv="save" type="button">פתיחה</button><label class="act" for="cv-file">החלפה</label><button class="act ghost" data-cv="del" type="button">מחיקה</button></div></div>`;
+}
+function renderApplyCv(){
+  const el=$("ap-cv");if(!el)return;
+  if(!cv){el.innerHTML=`<div class="hint"><span>עוד לא העלית קורות חיים</span><button data-cv="goto" type="button">להעלאה</button></div>`;return}
+  el.innerHTML=`<div class="cvrow small"><div class="cvicon" aria-hidden="true">${esc(cv.name.split(".").pop().toUpperCase())}</div><div class="cvmeta"><b>${esc(cv.name)}</b><span>מוכן לצירוף</span></div>
+    <div class="cvbtns">${canShareCv()?'<button class="act" data-cv="share" type="button">שליחה עם המכתב</button>':""}<button class="act" data-cv="save" type="button">שמירה לקבצים</button></div></div>`;
+}
+document.addEventListener("change",e=>{if(e.target.id==="cv-file"){const f=e.target.files&&e.target.files[0];e.target.value="";if(f)addCv(f)}});
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-cv]");if(!b)return;const k=b.dataset.cv;
+  if(k==="save")saveCvFile();
+  else if(k==="del"){if(b.dataset.armed){removeCv()}else{b.dataset.armed="1";b.textContent="למחוק? לחצי שוב";setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent="מחיקה"}},3000)}}
+  else if(k==="goto"){closeApply();ui.tab="tips";render();setTimeout(()=>$("me")?.scrollIntoView({block:"start"}),50)}
+  else if(k==="share"){const f=cvFile();navigator.share({files:[f],title:"קורות חיים",text:$("ap-letter").value}).catch(()=>{})}
+});
+loadCv().then(()=>{if(cv)render()});
 function showBanner(t){const b=$("banner");b.textContent=t;b.hidden=false}
 
 try{$("today-date").textContent=new Date().toLocaleDateString("he-IL",{weekday:"long",day:"numeric",month:"long"})}catch(_){}
