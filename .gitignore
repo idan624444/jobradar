@@ -1,0 +1,4 @@
+tools/inbox/
+.firebase/
+.DS_Store
+*.key.json

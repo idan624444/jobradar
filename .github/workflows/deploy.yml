@@ -1,0 +1,47 @@
+# Deploys site/ to Firebase Hosting (jobradar-tehila.web.app).
+# Cloud scans may push to a claude/* branch; those are merged into main first so main always holds the latest jobs.
+name: Deploy JobRadar
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["site/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge scan branch into main
+        if: github.ref != 'refs/heads/main'
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name "jobradar-bot"
+          git config user.email "jobradar-bot@users.noreply.github.com"
+          git fetch origin "refs/heads/$BRANCH"
+          git merge --no-edit FETCH_HEAD
+          git push origin HEAD:main
+          git push origin --delete "$BRANCH" || true
+
+      - name: Validate jobs file
+        run: node -e 'const d=JSON.parse(require("fs").readFileSync("site/jobs.json","utf8"));if(!Array.isArray(d.jobs))throw new Error("bad jobs.json");console.log(d.jobs.length,"jobs")'
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: jobradar-tehila
+          channelId: live
