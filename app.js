@@ -25,7 +25,7 @@ const str=(v,n=200)=>typeof v==="string"?v.slice(0,n):"";
 const strs=(a,n=4)=>Array.isArray(a)?a.filter(x=>typeof x==="string").slice(0,n).map(x=>x.slice(0,200)):[];
 function cleanJob(id,d){d=d||{};const sc=Math.round(Number(d.score));return{id,title:str(d.title,160)||"משרה ללא כותרת",company:str(d.company,80),city:str(d.city,80),scope:str(d.scope,40),mode:str(d.mode,40),experience:str(d.experience,40),
   category:CATS.includes(d.category)?d.category:"שיווק כללי",source:str(d.source,30),url:safeUrl(d.url),postedAt:/^\d{4}-\d{2}-\d{2}$/.test(d.postedAt)?d.postedAt:"",runId:str(d.runId,20),
-  score:Number.isFinite(sc)?Math.min(100,Math.max(0,sc)):0,reasons:strs(d.reasons),flags:strs(d.flags,3),tip:str(d.tip,400)}}
+  score:Number.isFinite(sc)?Math.min(100,Math.max(0,sc)):0,reasons:strs(d.reasons),flags:strs(d.flags,3),tip:str(d.tip,400),letter:str(d.letter,1500)}}
 function cleanStatus(d){d=d||{};return{state:typeof d.state==="string"?d.state:"",note:str(d.note,2000),updatedAt:str(d.updatedAt,40)}}
 function isNew(j){return meta?.lastRunId? j.runId===meta.lastRunId : false}
 
@@ -78,7 +78,8 @@ function card(j){
       <ul class="why">${(j.reasons||[]).map(r=>`<li>${esc(r)}</li>`).join("")}${(j.flags||[]).map(r=>`<li class="flag">${esc(r)}</li>`).join("")}</ul>
       ${j.tip?`<div class="tip"><b>איך לבלוט:</b> ${esc(j.tip)}</div>`:""}
       <div class="actions">
-        <a class="act primary" href="${esc(j.url)}" target="_blank" rel="noopener noreferrer">למודעה ולהגשה ←</a>
+        <button class="act primary" data-apply="${esc(j.id)}">הגשת מועמדות</button>
+        <a class="act" href="${esc(j.url)}" target="_blank" rel="noopener noreferrer">למודעה ↗</a>
         ${btn("saved","☆ שמירה")}${btn("applied","הגשתי")}${btn("interview","יש ראיון")}${btn("offer","הצעה")}${btn("rejected","לא התקבלתי")}
         <button class="act ghost" data-set="hidden" data-id="${esc(j.id)}" aria-pressed="${pressed("hidden")}" ${readOnly?"disabled":""}>${s==="hidden"?"החזרה לרשימה":"לא מתאים לי"}</button>
       </div>
@@ -86,7 +87,16 @@ function card(j){
     </div>
   </article>`;
 }
-function tipsView(){return `<div class="tips">
+function tipsView(){const p=profile;return `<div class="tips">
+  <section class="tipcard" id="me"><h3>הפרטים שלי להגשה</h3>
+    <p class="fine">הפרטים נוספים אוטומטית בסוף כל מכתב פנייה. הם נשמרים רק בטלפון שלך ולא עולים לאינטרנט.</p>
+    <div class="form">
+      <label for="pf-name">שם מלא</label><input id="pf-name" data-pf="name" autocomplete="name" value="${esc(p.name)}" placeholder="תהילה">
+      <label for="pf-phone">טלפון</label><input id="pf-phone" data-pf="phone" type="tel" autocomplete="tel" dir="ltr" value="${esc(p.phone)}" placeholder="050-0000000">
+      <label for="pf-email">מייל</label><input id="pf-email" data-pf="email" type="email" autocomplete="email" dir="ltr" value="${esc(p.email)}" placeholder="name@gmail.com">
+      <label for="pf-portfolio">קישור לתיק עבודות</label><input id="pf-portfolio" data-pf="portfolio" type="url" dir="ltr" value="${esc(p.portfolio)}" placeholder="https://instagram.com/…">
+    </div>
+  </section>
   <section class="tipcard"><h3>התיק שלך הוא היתרון הגדול</h3>
     <p>אין לך עדיין ניסיון רשמי, אבל יש לך משהו שרוב המועמדים לג׳וניור לא מביאים: צילום ועריכה טובים ועמוד עסקי שניהלת בעצמך.</p>
     <ul><li>אספי 6–9 עבודות (תמונות, רילס, פוסטים) לתיק אחד: היילייט באינסטגרם, תיקייה בדרייב או עמוד Canva.</li>
@@ -97,11 +107,10 @@ function tipsView(){return `<div class="tips">
     <li>״ניהול עמוד עסקי עצמאי״ זה ניסיון. כתבי אותו כמו משרה, עם תאריכים ותוצאות.</li>
     <li>ציינו את לימודי השיווק והסושיאל שמתחילים בקרוב. מעסיקים אוהבים ג׳וניורית שלומדת.</li>
     <li>כלים: Canva, CapCut, Lightroom, Meta Business Suite, ומה שתלמדי בקורס.</li></ul></section>
-  <section class="tipcard"><h3>הודעת פנייה קצרה</h3>
-    <div class="tpl">היי, ראיתי את המשרה של [תפקיד] ב[חברה] והיא בדיוק מה שאני מחפשת.
-אני מתחילה בקרוב לימודי שיווק וסושיאל, ניהלתי עמוד עסקי משלי, ואני חזקה במיוחד בצילום ועריכת וידאו לרשתות.
-מצרפת קו״ח וקישור לתיק עבודות: [קישור]. אשמח לשיחה קצרה.
-תהילה</div></section>
+  <section class="tipcard"><h3>איך מגישים בחצי דקה</h3>
+    <ul><li>לוחצים ״הגשת מועמדות״ בכרטיס. מחכה שם מכתב פנייה שנכתב במיוחד למשרה הזו, ואפשר לערוך אותו.</li>
+    <li>״העתקה ופתיחת המודעה״ מעתיק את המכתב, פותח את המודעה ומסמן ״הגשתי״.</li>
+    <li>במודעה: מדביקים את המכתב בשדה ההודעה ומצרפים את קובץ קורות החיים מהטלפון.</li></ul></section>
   <section class="tipcard"><h3>קצב שעובד</h3>
     <ul><li>הגישי למשרות עם ציון 70 ומעלה כבר ביום שהן עולות. משרות ג׳וניור מתמלאות תוך ימים.</li>
     <li>אחרי הגשה סמני ״הגשתי״, ואם אין תשובה תוך שבוע שלחי הודעת המשך קצרה.</li>
@@ -145,6 +154,41 @@ document.addEventListener("change",e=>{
   const note=e.target.value.slice(0,2000);if((status[id]?.note||"")===note)return;
   status[id]={...(status[id]||{}),note,updatedAt:new Date().toISOString()};saveStatus();
 });
+// Apply sheet: a tailored letter is ready to copy; she pastes it on the posting and attaches her CV.
+const PROFILE="jobradar-profile-v1";
+let profile=(()=>{try{const o=JSON.parse(localStorage.getItem(PROFILE)||"{}");return{name:str(o.name,80),phone:str(o.phone,30),email:str(o.email,120),portfolio:str(o.portfolio,300)}}catch(_){return{name:"",phone:"",email:"",portfolio:""}}})();
+function saveProfile(){try{localStorage.setItem(PROFILE,JSON.stringify(profile))}catch(_){}}
+function signature(){const p=profile;return [p.portfolio&&("תיק עבודות: "+p.portfolio),"",p.name||"תהילה",p.phone,p.email].filter((x,i)=>x||i===1).join("\n").replace(/^\n+/,"")}
+function letterFor(j){
+  const body=j.letter||`שלום,\nאני מגישה מועמדות לתפקיד ${j.title}${j.company&&j.company!=="חברה חסויה"?" ב"+j.company:""}.\nניהלתי עמוד עסקי משלי ברשתות, ואני חזקה במיוחד בצילום ועריכת וידאו לרשתות. בדצמבר אני מתחילה לימודי שיווק וסושיאל.\nמצרפת קורות חיים, ואשמח לשיחה.`;
+  return body.trim()+"\n\n"+signature();
+}
+let applyJob=null;
+function openApply(id){
+  const j=jobs.find(x=>x.id===id);if(!j)return;applyJob=j;
+  $("ap-title").textContent=j.title;$("ap-co").textContent=[j.company||"חברה חסויה",j.city].filter(Boolean).join(" · ");
+  $("ap-letter").value=letterFor(j);$("ap-go").href=j.url;
+  $("ap-nopf").hidden=!!profile.portfolio;
+  const d=$("apply");if(typeof d.showModal==="function"){d.showModal()}else{d.setAttribute("open","")}
+}
+function closeApply(){const d=$("apply");if(d.open){typeof d.close==="function"?d.close():d.removeAttribute("open")}}
+function copyLetter(){
+  const ta=$("ap-letter"),t=ta.value;
+  const fallback=()=>{ta.focus();ta.select();try{document.execCommand("copy")}catch(_){}};
+  try{navigator.clipboard.writeText(t).catch(fallback)}catch(_){fallback()}
+}
+function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
+document.addEventListener("click",e=>{
+  const a=e.target.closest("[data-apply]");if(a){openApply(a.dataset.apply);return}
+  if(e.target.closest("#ap-go")&&applyJob){
+    copyLetter();
+    const id=applyJob.id;if(!["interview","offer"].includes(st(id))){status[id]={...(status[id]||{}),state:"applied",updatedAt:new Date().toISOString()};saveStatus()}
+    closeApply();render();toast("המכתב הועתק. הדביקי אותו במודעה וצרפי קורות חיים");return}
+  if(e.target.closest("#ap-copy")){copyLetter();toast("המכתב הועתק");return}
+  if(e.target.closest("#ap-close")||e.target===$("apply")){closeApply();return}
+  if(e.target.closest("#ap-editpf")){closeApply();ui.tab="tips";render();setTimeout(()=>$("pf-portfolio")?.focus(),50);return}
+});
+document.addEventListener("input",e=>{const k=e.target.dataset?.pf;if(k){profile[k]=e.target.value.slice(0,300);saveProfile()}});
 function showBanner(t){const b=$("banner");b.textContent=t;b.hidden=false}
 
 try{$("today-date").textContent=new Date().toLocaleDateString("he-IL",{weekday:"long",day:"numeric",month:"long"})}catch(_){}

@@ -181,6 +181,32 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 @media (prefers-reduced-motion:reduce){*{transition-duration:0s!important}.tab:active,.chip:active,.act:active{transform:none}}
 @media (prefers-reduced-transparency:reduce){.bar,body::before{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}}
 @media (prefers-contrast:more){.card,.stat,.tipcard,.empty{box-shadow:none;outline:1px solid var(--label-3)}.tag,.act{outline:1px solid var(--label-3)}}
+
+/* apply sheet */
+dialog#apply{border:0;padding:0;margin:auto auto 0;width:100%;max-width:560px;max-height:92vh;background:var(--surface);color:var(--label);border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.18);direction:rtl}
+@media (min-width:600px){dialog#apply{margin:auto;border-radius:22px}}
+dialog#apply::backdrop{background:rgba(0,0,0,.36)}
+.sheet{display:flex;flex-direction:column;gap:12px;padding:10px 20px calc(20px + env(safe-area-inset-bottom,0px));max-height:92vh;box-sizing:border-box;overflow:auto}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--label-3);margin:0 auto 4px}
+.sheet h2{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.sheet .sub2{color:var(--label-2);font-size:15px;margin-top:-8px}
+.steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14.5px;color:var(--label-2)}
+.steps li{display:flex;gap:9px;align-items:center}
+.steps b{flex:0 0 22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--tint-soft);color:var(--tint);font-size:12.5px}
+#ap-letter{width:100%;box-sizing:border-box;min-height:240px;resize:vertical;border:0;background:var(--fill-2);color:var(--label);border-radius:14px;padding:12px 14px;font:inherit;font-size:15.5px;line-height:1.55}
+.hint{font-size:14px;background:var(--orange-soft);color:var(--orange);border-radius:12px;padding:9px 12px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.hint button{border:0;background:transparent;color:inherit;font-weight:700;text-decoration:underline;padding:0}
+.sheet .row{display:flex;gap:8px;flex-wrap:wrap}
+.sheet .row .act{flex:1 1 auto;text-align:center;padding-block:12px;font-size:16px}
+.sheet .row .act.primary{flex-basis:100%}
+.toast{position:fixed;inset:auto 16px calc(24px + env(safe-area-inset-bottom,0px));margin:0 auto;max-width:420px;background:var(--label);color:var(--bg);border-radius:14px;padding:12px 16px;font-size:15px;font-weight:600;text-align:center;z-index:30;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+@media (prefers-reduced-motion:no-preference){dialog#apply[open]{animation:sheetIn .45s var(--spring)}@keyframes sheetIn{from{transform:translateY(40px);opacity:.001}to{transform:none;opacity:1}}.toast:not([hidden]){animation:sheetIn .35s var(--spring)}}
+/* profile form */
+.fine{font-size:14px;color:var(--label-2);margin:0 0 10px}
+.form{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center}
+.form label{font-size:14.5px;font-weight:600;color:var(--label-2)}
+.form input{min-width:0;border:0;background:var(--fill-2);color:var(--label);border-radius:10px;padding:9px 12px;font:inherit;font-size:16px}
+@media (max-width:420px){.form{grid-template-columns:1fr}.form label{margin-top:4px}}
 </style>
 </head>
 <body>
@@ -208,6 +234,23 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
   <main id="view" class="list"></main>
   <p class="foot">JobRadar · סריקה אוטומטית כל בוקר בשמונה · דרושים, AllJobs, Indeed, Glassdoor, LinkedIn ומשרדי פרסום</p>
 </div>
+<dialog id="apply" aria-labelledby="ap-title">
+  <div class="sheet">
+    <div class="grab" aria-hidden="true"></div>
+    <h2 id="ap-title"></h2>
+    <div class="sub2" id="ap-co"></div>
+    <ol class="steps"><li><b>1</b>בדקי את המכתב ותקני אם צריך</li><li><b>2</b>״העתקה ופתיחת המודעה״, ושם הדביקי אותו</li><li><b>3</b>צרפי את קובץ קורות החיים ושלחי</li></ol>
+    <div class="hint" id="ap-nopf" hidden><span>עוד לא הוספת קישור לתיק עבודות</span><button id="ap-editpf" type="button">להוספה</button></div>
+    <label for="ap-letter" class="eyebrow">מכתב הפנייה</label>
+    <textarea id="ap-letter" spellcheck="true"></textarea>
+    <div class="row">
+      <a class="act primary" id="ap-go" href="#" target="_blank" rel="noopener noreferrer">העתקה ופתיחת המודעה</a>
+      <button class="act" id="ap-copy" type="button">העתקה בלבד</button>
+      <button class="act ghost" id="ap-close" type="button">סגירה</button>
+    </div>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status" hidden></div>
 <script src="app.js"></script>
 </body>
 </html>
